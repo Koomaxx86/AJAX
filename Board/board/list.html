@@ -50,11 +50,49 @@
                 <p>커뮤니티 게시글 데이터를 조회합니다.</p>
             </div>
 
-            <!-- 버튼 영역 -->
+            <!-- 검색/필터 -->
             <div class="btn-box">
+                <!-- 검색 -->
+                <div class="item">
+                    <select name="search-type" id="search-type" class="input-search">
+                        <option value="0">전체</option>
+                        <option value="1">제목</option>
+                        <option value="2">내용</option>
+                        <option value="3">제목+내용</option>
+                        <option value="4">작성자</option>
+                    </select>
+                    <input type="text" name="keyword" id="keyword" class="input-search">
+                    <a href="javascript:;" class="btn" id="btn-search">검색</a>
+                </div>
+
+                <!-- 필터 -->
+                <div class="item">
+                    <select name="rows" id="rows" class="input-search">
+                        <option value="5">5개씩 보기</option>
+                        <option value="10">10개씩 보기</option>
+                        <option value="30">30개씩 보기</option>
+                        <option value="50">50개씩 보기</option>
+                    </select>
+                </div>
+
+                <!-- 정렬 -->
+                <div class="item">
+                    <select name="order" id="order" class="input-search">
+                        <option value="0">최근 순</option>
+                        <option value="1">오래된 순</option>
+                        <option value="2">조회수 순</option>
+                    </select>
+                </div>
+
+                <!-- 글쓰기 -->
                 <div class="item">
                     <a href="insert.html" class="btn">글쓰기</a>
                 </div>
+            </div>
+
+            <!-- 게시글 수 -->
+            <div class="info">
+                <p>게시글 <span id="totalCount">0</span> 건이 조회되었습니다.</p>
             </div>
 
             <!-- 게시글 목록 -->
@@ -97,6 +135,9 @@
                 <a href="javascript:;" class="page-arrow" id="next">&rsaquo;</a>
                 <a href="javascript:;" class="page-arrow" id="last">&raquo;</a>
             </div>
+
+
+
         </div>
     </section>
 
@@ -110,12 +151,18 @@
         let rows = 10 // 페이지당 게시글 수
         let pageCount = 10 // 노출 페이지 개수
         let totalCount = 0 // 전체 게시글 수
+        // 검색 관련 변수
+        let searchType = 0 // 검색 조건
+        let keyword = '' // 검색어
+        // 순서 변수
+        let order = 0 // 기본값 : 최근 순
 
 
         // 게시글 목록 요청
         // getList()
         getPageList()
         initPage()
+        initRows()
 
 
         // 게시글 목록
@@ -147,6 +194,8 @@
                 'rows': rows,
                 'pageCount': pageCount,
                 'totalCount': totalCount,
+                'searchType': searchType,
+                'keyword': keyword,
             }
 
             const url = 'http://192.168.30.119:8080/api/board/pagination'
@@ -165,6 +214,10 @@
                     let last = pageInfo.lastPage
                     let prev = pageInfo.prev
                     let next = pageInfo.next
+
+                    // 게시글 건 수
+                    let totalCount = pageInfo.totalCount
+                    $('#totalCount').text(totalCount)
 
                     let pagination = ''
                     for (let i = start; i <= end; i++) {
@@ -186,13 +239,14 @@
 
                     // 화살표 버튼 유효성 처리
                     $('.page-arrow').show()
-                    if( page == 1) {
+                    if (page == 1) {
                         $('#prev').hide()
                     }
 
-                    if( page == last) {
+                    if (page == last) {
                         $('#next').hide()
                     }
+
 
                     // 페이지 번호 클릭 이벤트
                     $('.page-no, .page-arrow').on('click', function () {
@@ -206,12 +260,16 @@
                         initPage() // 페이지 번호 갱신
                         getPageList() // 페이지 목록 갱신
                     })
+
+
+
                 },
                 error: function (request, status, error) {
                     alert("code:" + request.status + "\n" + "message:" + request.responseText + "\n" +
                         "error:" + error);
                 }
             })
+
         }
 
         // 게시글 목록 - 페이징
@@ -222,6 +280,9 @@
                 pageNo: page,
                 rows: rows,
                 pageCount: pageCount,
+                searchType: searchType,
+                keyword: keyword,
+                order: order,
             }
 
             $.ajax({
@@ -239,6 +300,7 @@
                 }
             })
         }
+
 
         // 게시글 목록 출력
         function displayList(boardList) {
@@ -276,6 +338,110 @@
             }
             $('#board-data').html(boardData)
         }
+
+
+        // 검색 클릭 이벤트
+        $('#btn-search').on('click', function () {
+            search()
+        })
+
+        // 페이지당 게시글 수 - 변경 이벤트
+        $('#rows').on('change', function () {
+            rows = $(this).val()
+            page = 1
+            getPageList()
+            initPage()
+        })
+
+        // 보여줄 게시글 수 갱신
+        function initRows() {
+            $('#rows').val(rows)
+        }
+
+
+        // 검색 - 키 입력 이벤트
+        $('#keyword').on('keyup', function (event) {
+            console.log(event.keyCode);
+
+            // 엔터
+            if (event.keyCode == 13) {
+                search()
+            }
+        })
+
+
+        // 검색
+        function search() {
+            // 검색 조건 (serach-type)
+            // 검색어    (keyword)
+            searchType = $('#search-type').val()
+            keyword = $('#keyword').val()
+
+            let data = {
+                searchType: searchType,
+                keyword: keyword,
+                rows: rows,
+                page: page,
+                pageCount: pageCount,
+            }
+
+            const url = 'http://192.168.30.119:8080/api/board/list'
+
+            $.ajax({
+                url: url,
+                type: 'GET',
+                data: data,
+                success: function (response) {
+                    let boardList = response
+
+                    displayList(boardList)
+
+                    page = 1
+                    initPage()
+
+                },
+                error: function (request, status, error) {
+                    alert("code:" + request.status + "\n" + "message:" + request.responseText + "\n" +
+                        "error:" + error);
+                }
+            })
+        }
+
+        // 순서 필터 - 변경 이벤트
+        $('#order').on('change', function () {
+
+            order = $(this).val()
+
+            let data = {
+                searchType: searchType,
+                keyword: keyword,
+                rows: rows,
+                page: page,
+                pageCount: pageCount,
+                order: order,
+            }
+
+            const url = 'http://192.168.30.119:8080/api/board/order'
+
+            $.ajax({
+                url: url,
+                type: 'GET',
+                data: data,
+                success: function (response) {
+                    let boardList = response
+
+                    displayList(boardList)
+
+                    page = 1
+                    initPage()
+
+                },
+                error: function (request, status, error) {
+                    alert("code:" + request.status + "\n" + "message:" + request.responseText +
+                        "\n" + "error:" + error);
+                }
+            })
+        })
     </script>
 
 </body>

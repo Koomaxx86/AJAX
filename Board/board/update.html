@@ -139,8 +139,8 @@
                 url             :   url,
                 type            :   'PUT',
                 data            :   JSON.stringify(data),
-                contentType     :   'application/json',     // 클라이언트 쪽에서 서버쪽으로 보내는 형식 지정
-                dataType        :   'text',     // 서버에서 클라이언트로 응답해주는 형식 지정
+                contentType     :   'application/json',     // 요청 컨텐츠 타입
+                dataType        :   'text',                 // 응답 컨텐츠 타입
                 success         : function(response, status) {
                     if( response == 'SUCCESS' ){
                         alert('수정이 완료되었습니다.')
@@ -177,9 +177,8 @@
                 type            :   'DELETE',
                 data            :   JSON.stringify(data),
                 contentType     :   'application/json',
-                dataType        :   'text',
+                dataType        :   'text',                 // 응답 컨텐츠 타입
                 success         : function(response, status) {
-                    alert(response)
                     if( response == 'SUCCESS' ){
                         alert('삭제가 완료되었습니다.')
                         // 목록 페이지로 이동
